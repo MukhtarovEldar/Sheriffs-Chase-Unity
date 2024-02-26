@@ -1,0 +1,11 @@
+*.psd
+*.meta
+*.mp4
+
+.suo
+
+Builds/
+Library/
+Logs/
+Packages/
+UserSettings/
