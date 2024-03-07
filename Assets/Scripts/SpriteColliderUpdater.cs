@@ -14,6 +14,7 @@ public class SpriteColliderUpdater : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
     }
     
+    // LateUpdate ensures that the collider is updated right after the sprite changes
     void LateUpdate()
     {
         spriteRenderer.sprite.GetPhysicsShape(0, physicsShape);

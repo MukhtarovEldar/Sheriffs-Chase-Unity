@@ -29,6 +29,26 @@ public class PlayerController : MonoBehaviour
     private float fallingDuration = -0.3f;
     private bool flagFirstJump = false;
 
+    private const float minXPosition = -11.5f;
+    private const float maxXPosition = 6.5f;
+
+    private const float jumpSpeedMultiplier = 0.5f;
+    private const float runSpeedMultiplier = 1.5f;
+    private const float minAnimSpeed = 1f;
+    private const float maxAnimSpeed = 2f;
+    private const int leftMovement = -1;
+    private const int rightMovement = 1;
+
+    private const string horizontalInputAxis = "Horizontal";
+    private const string runningAnimationState = "running";
+    private const string fallingAnimationState = "falling";
+    private const string jumpingAnimationState = "jumping";
+    private const string scoringSceneName = "ScoringScene";
+    private const string barrelObjectName = "barrel(Clone)";
+    private const string isFallingString = "isFalling";
+    private const string isJumpingString = "isJumping";
+    private const string movementSpeed = "Speed";
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -44,7 +64,7 @@ public class PlayerController : MonoBehaviour
         mainAudioSource.volume = 0.2f;
         runningAudioSource.volume = 0.2f;
         jumpingAudioSource.volume = 0.2f;
-        
+
         Jump();
         mainAudioSource.Play();
         mainAudioSource.PlayOneShot(sheriff_speak);
@@ -69,23 +89,20 @@ public class PlayerController : MonoBehaviour
 
         if (!isFalling && flagFall)
         {
-            // Move Left and Right
-            float horizontalInput = Input.GetAxisRaw("Horizontal");
+            float horizontalInput = Input.GetAxisRaw(horizontalInputAxis);
 
-            // Check if the player does not go out of boundaries
-            if (transform.position.x >= 6.5)
+            if (transform.position.x >= maxXPosition)
             {
                 horizontalInput = Mathf.Min(horizontalInput, 0f);
             }
-            else if (transform.position.x <= -11.5)
+            else if (transform.position.x <= minXPosition)
             {
                 horizontalInput = Mathf.Max(horizontalInput, 0f);
             }
 
-            // Adjust the speed of the player
             rb.velocity = new Vector2(horizontalInput * scrollSpeed * 25, isJumping ? rb.velocity.y : 0);
 
-            animSpeed = Mathf.Clamp(5 * scrollSpeed, 1f, 2f);
+            animSpeed = Mathf.Clamp(5 * scrollSpeed, minAnimSpeed, maxAnimSpeed);
             anim.speed = animSpeed;
             if (originalSpeed != 0)
             {
@@ -104,26 +121,23 @@ public class PlayerController : MonoBehaviour
                 }
             }
 
-            // Adjust the speed of the player running animation if the player is moving left or right
-            if (anim.GetCurrentAnimatorStateInfo(0).IsName("running"))
+            if (anim.GetCurrentAnimatorStateInfo(0).IsName(runningAnimationState))
             {
-                if (horizontalInput == -1)
+                if (horizontalInput == leftMovement)
                 {
                     if (originalSpeed == 0)
                     {
                         originalSpeed = anim.speed;
                     }
-                    // Decrease the speed of the running animation if the player is moving left
-                    anim.speed = originalSpeed * 0.5f;
+                    anim.speed = originalSpeed * jumpSpeedMultiplier;
                 }
-                else if (horizontalInput == 1)
+                else if (horizontalInput == rightMovement)
                 {
                     if (originalSpeed == 0)
                     {
                         originalSpeed = anim.speed;
                     }
-                    // Increase the speed of the running animation if the player is moving right
-                    anim.speed = originalSpeed * 1.5f;
+                    anim.speed = originalSpeed * runSpeedMultiplier;
                 }
                 else
                 {
@@ -134,22 +148,15 @@ public class PlayerController : MonoBehaviour
                     }
                 }
             }
-            anim.SetFloat("Speed", Mathf.Abs(horizontalInput));
-            // TODO: Check if Speed variable exists in the animator
-            anim.SetBool("isFalling", isFalling);
+            anim.SetFloat(movementSpeed, Mathf.Abs(horizontalInput));
+            anim.SetBool(isFallingString, isFalling);
             transform.position = new Vector3(transform.position.x, -2.2f, transform.position.z);
         }
         else
         {
-            // FALLING STATE
-            if (originalSpeed != 0)
-            {
-                anim.speed = originalSpeed;
-                originalSpeed = 0;
-            }
             if (flagFall)
             {
-                anim.Play("falling");
+                anim.Play(fallingAnimationState);
                 mainAudioSource.Stop();
                 runningAudioSource.Stop();
                 jumpingAudioSource.Stop();
@@ -157,15 +164,14 @@ public class PlayerController : MonoBehaviour
                 flagFall = false;
             }
             isFalling = false;
-            anim.SetBool("isFalling", isFalling);
+            anim.SetBool(isFallingString, isFalling);
             rb.velocity = Vector2.zero;
             rb.isKinematic = true;
             rb.constraints = RigidbodyConstraints2D.FreezeAll;
         }
 
-        // Wait for the falling animation to finish before loading the scoring scene
         stateInfo = anim.GetCurrentAnimatorStateInfo(0);
-        if (stateInfo.IsName("falling"))
+        if (stateInfo.IsName(fallingAnimationState))
         {
             fallingDuration += stateInfo.length;
             StartCoroutine(StartElapsedTime(fallingDuration));
@@ -179,10 +185,9 @@ public class PlayerController : MonoBehaviour
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
-            UnityEngine.SceneManagement.SceneManager.LoadScene("ScoringScene");
+            SceneManager.LoadScene(scoringSceneName);
         }
 
-        // Pause all audio sources if the game is paused
         if (isPaused)
         {
             mainAudioSource.Pause();
@@ -197,16 +202,16 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.name == "barrel(Clone)" && !isFalling)
+        if (other.name == barrelObjectName && !isFalling)
         {
             isFalling = true;
-            anim.SetBool("isFalling", isFalling);
+            anim.SetBool(isFallingString, isFalling);
         }
     }
 
-    void Jump()
+    private void Jump()
     {
         if (isFalling)
         {
@@ -214,12 +219,10 @@ public class PlayerController : MonoBehaviour
         }
 
         isJumping = true;
-        anim.SetBool("isJumping", isJumping);
+        anim.SetBool(isJumpingString, isJumping);
 
-        anim.Play("jumping");
+        anim.Play(jumpingAnimationState);
 
-        // Added this line to check if the first jump is made so that the jump sound does not
-        // overlap with the horse neighing sound
         if (flagFirstJump && !jumpingAudioSource.isPlaying)
         {
             jumpingAudioSource.PlayOneShot(jumping);
@@ -227,6 +230,6 @@ public class PlayerController : MonoBehaviour
         flagFirstJump = true;
 
         isJumping = false;
-        anim.SetBool("isJumping", isJumping);
+        anim.SetBool(isJumpingString, isJumping);
     }
 }
