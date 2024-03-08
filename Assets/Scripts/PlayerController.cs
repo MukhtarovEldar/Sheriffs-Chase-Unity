@@ -49,6 +49,13 @@ public class PlayerController : MonoBehaviour
     private const string isJumpingString = "isJumping";
     private const string movementSpeed = "Speed";
 
+    private enum InputKey
+    {
+        Space = KeyCode.Space,
+        W = KeyCode.W,
+        UpArrow = KeyCode.UpArrow
+    }
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -110,8 +117,8 @@ public class PlayerController : MonoBehaviour
             }
 
             if (!isPaused){
-                if ((Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.W)
-                    || Input.GetKeyDown(KeyCode.UpArrow)) && !isJumping)
+                if ((Input.GetKeyDown((KeyCode)InputKey.Space) || Input.GetKeyDown((KeyCode)InputKey.W)
+                    || Input.GetKeyDown((KeyCode)InputKey.UpArrow)) && !isJumping)
                 {
                     if (runningAudioSource.isPlaying)
                     {
